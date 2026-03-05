@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'VoiceBoard - Collect & Prioritize User Feedback with AI',
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ja">
       <body className="min-h-screen bg-gray-50 font-sans text-gray-900 antialiased">
         {children}
+              <Toaster richColors position="top-right" />
       </body>
     </html>
   );

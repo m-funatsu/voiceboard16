@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePremium } from '@/contexts/PremiumContext';
+import { supabase } from '@/lib/supabase';
 import { createCheckoutSession } from '@/lib/stripe';
 
 const plans = [
@@ -36,7 +37,8 @@ export default function PricingPage() {
     if (!user) return;
     setLoading(planId);
     try {
-      const { url } = await createCheckoutSession(user.id, planId);
+      const { data: { session } } = await supabase.auth.getSession();
+      const { url } = await createCheckoutSession(session?.access_token || '', planId);
       if (url) window.location.href = url;
     } catch (err) {
       console.error('Checkout error:', err);

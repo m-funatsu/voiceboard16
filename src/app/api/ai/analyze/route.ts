@@ -34,6 +34,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'projectId is required' }, { status: 400 });
     }
 
+    // Verify project ownership
+    const { data: project, error: projectError } = await supabaseAdmin
+      .from('voiceboard_projects')
+      .select('id')
+      .eq('id', projectId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (projectError || !project) {
+      return NextResponse.json({ error: 'Forbidden: you do not own this project' }, { status: 403 });
+    }
+
     // Fetch all feedback for this project
     const { data: feedbackItems, error } = await supabaseAdmin
       .from('voiceboard_feedback')

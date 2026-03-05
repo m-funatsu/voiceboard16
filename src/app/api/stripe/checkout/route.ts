@@ -1,22 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
+import { createClient } from '@supabase/supabase-js';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 function getStripe() {
-  return new Stripe(process.env.STRIPE_SECRET_KEY!);
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured');
+  return new Stripe(key);
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, planId } = await req.json();
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-    if (!userId || !planId) {
-      return NextResponse.json({ error: 'userId and planId are required' }, { status: 400 });
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Use authenticated user
+    const userId = user.id;
+    const email = user.email || '';
+
+    const { planId } = await req.json();
+
+    if (!planId) {
+      return NextResponse.json({ error: 'planId is required' }, { status: 400 });
     }
 
     const priceId = planId === 'business'
-      ? process.env.STRIPE_BUSINESS_PRICE_ID!
-      : process.env.STRIPE_PRO_PRICE_ID!;
+      ? process.env.STRIPE_BUSINESS_PRICE_ID
+      : process.env.STRIPE_PRO_PRICE_ID;
+
+    if (!priceId) {
+      return NextResponse.json({ error: 'Price not configured for this plan' }, { status: 500 });
+    }
 
     // Get or create Stripe customer
     const { data: profile } = await supabaseAdmin
@@ -25,14 +55,10 @@ export async function POST(req: NextRequest) {
       .eq('id', userId)
       .single();
 
-    if (!profile) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    let customerId = profile.stripe_customer_id;
+    let customerId = profile?.stripe_customer_id;
     if (!customerId) {
       const customer = await getStripe().customers.create({
-        email: profile.email,
+        email: email || profile?.email,
         metadata: { userId },
       });
       customerId = customer.id;

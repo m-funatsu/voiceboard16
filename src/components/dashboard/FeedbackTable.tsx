@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import StatusBadge from './StatusBadge';
 import CategoryBadge from './CategoryBadge';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import type { Feedback, FeedbackStatus } from '@/types';
 import { updateFeedback, deleteFeedback } from '@/lib/storage';
 
@@ -13,6 +14,7 @@ interface FeedbackTableProps {
 
 export default function FeedbackTable({ feedback, onUpdate }: FeedbackTableProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{isOpen: boolean; title: string; message: string; onConfirm: () => void}>({isOpen: false, title: '', message: '', onConfirm: () => {}});
 
   const handleStatusChange = async (id: string, status: FeedbackStatus) => {
     setActionLoading(id);
@@ -39,16 +41,23 @@ export default function FeedbackTable({ feedback, onUpdate }: FeedbackTableProps
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('本当に削除しますか？')) return;
-    setActionLoading(id);
-    try {
-      await deleteFeedback(id);
-      onUpdate();
-    } catch (err) {
-      console.error('Failed to delete:', err);
-    } finally {
-      setActionLoading(null);
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: '削除の確認',
+      message: '本当にこのフィードバックを削除しますか？この操作は元に戻せません。',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({...prev, isOpen: false}));
+        setActionLoading(id);
+        try {
+          await deleteFeedback(id);
+          onUpdate();
+        } catch (err) {
+          console.error('Failed to delete:', err);
+        } finally {
+          setActionLoading(null);
+        }
+      },
+    });
   };
 
   if (feedback.length === 0) {
@@ -124,6 +133,15 @@ export default function FeedbackTable({ feedback, onUpdate }: FeedbackTableProps
           ))}
         </tbody>
       </table>
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel="削除"
+        variant="danger"
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({...prev, isOpen: false}))}
+      />
     </div>
   );
 }

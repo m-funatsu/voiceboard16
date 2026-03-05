@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getProjectById, updateProject, deleteProject } from '@/lib/storage';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import type { Project } from '@/types';
 
 export default function ProjectSettingsPage() {
@@ -20,6 +21,7 @@ export default function ProjectSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState<{isOpen: boolean; title: string; message: string; onConfirm: () => void}>({isOpen: false, title: '', message: '', onConfirm: () => {}});
 
   useEffect(() => {
     const load = async () => {
@@ -58,13 +60,20 @@ export default function ProjectSettingsPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('本当にこのプロジェクトを削除しますか？全てのフィードバックと投票データが削除されます。')) return;
-    try {
-      await deleteProject(projectId);
-      router.push('/dashboard');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '削除に失敗しました');
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'プロジェクト削除の確認',
+      message: '本当にこのプロジェクトを削除しますか？全てのフィードバックと投票データが削除されます。この操作は元に戻せません。',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({...prev, isOpen: false}));
+        try {
+          await deleteProject(projectId);
+          router.push('/dashboard');
+        } catch (err) {
+          setError(err instanceof Error ? err.message : '削除に失敗しました');
+        }
+      },
+    });
   };
 
   if (loading) return <div className="text-sm text-gray-500">読み込み中...</div>;
@@ -152,6 +161,16 @@ export default function ProjectSettingsPage() {
           プロジェクトを削除
         </button>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        confirmLabel="削除"
+        variant="danger"
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({...prev, isOpen: false}))}
+      />
     </div>
   );
 }

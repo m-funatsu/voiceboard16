@@ -6,6 +6,11 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const navItems = [
   { href: '/dashboard', label: 'ダッシュボード', icon: '📊' },
+  { href: '/advisory', label: 'アドバイザリー', icon: '📋' },
+  { href: '/nps', label: 'NPS分析', icon: '📈' },
+  { href: '/priority', label: '優先度マトリクス', icon: '🎯' },
+  { href: '/urgency', label: '緊急度検出', icon: '🚨' },
+  { href: '/channels', label: 'マスターデータ', icon: '📚' },
   { href: '/projects/new', label: '新規プロジェクト', icon: '➕' },
   { href: '/settings', label: '設定', icon: '⚙️' },
   { href: '/pricing', label: '料金プラン', icon: '💳' },

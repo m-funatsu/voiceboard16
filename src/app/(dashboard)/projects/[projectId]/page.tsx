@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { getProjectById, getAllFeedbackForProject, getProjectStats } from '@/lib/storage';
 import FeedbackTable from '@/components/dashboard/FeedbackTable';
 import StatCard from '@/components/dashboard/StatCard';
+import { ExportButton } from '@/components/shared/ExportButton';
 import type { Project, Feedback } from '@/types';
+import { CATEGORY_CONFIG, STATUS_CONFIG } from '@/types';
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -87,8 +89,19 @@ export default function ProjectDetailPage() {
       )}
 
       {/* Feedback list */}
-      <div className="mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">フィードバック一覧</h2>
+        <ExportButton
+          data={feedback}
+          columns={[
+            { key: 'createdAt', label: '日付', format: (v: string) => new Date(v).toLocaleDateString('ja-JP') },
+            { key: 'title', label: 'タイトル' },
+            { key: 'category', label: 'カテゴリ', format: (v: string) => CATEGORY_CONFIG[v as keyof typeof CATEGORY_CONFIG]?.labelJa ?? v },
+            { key: 'status', label: 'ステータス', format: (v: string) => STATUS_CONFIG[v as keyof typeof STATUS_CONFIG]?.labelJa ?? v },
+            { key: 'voteCount', label: '投票数' },
+          ]}
+          filename={`feedback_${project.slug}`}
+        />
       </div>
       <FeedbackTable feedback={feedback} onUpdate={loadData} />
     </div>

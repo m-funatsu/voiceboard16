@@ -4,19 +4,26 @@ export const PLANS = {
   business: { price: 4900, label: 'Business', labelJa: 'ビジネス' },
 };
 
-export async function createCheckoutSession(userId: string, planId: 'pro' | 'business'): Promise<{ url: string }> {
+export async function createCheckoutSession(accessToken: string, planId: 'pro' | 'business'): Promise<{ url: string }> {
   const res = await fetch('/api/stripe/checkout', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId, planId }),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ planId }),
   });
   if (!res.ok) throw new Error('チェックアウトセッションの作成に失敗しました');
   return res.json();
 }
 
-export async function checkPremiumStatus(): Promise<{ isPremium: boolean; plan: string }> {
+export async function checkPremiumStatus(accessToken: string): Promise<{ isPremium: boolean; plan: string }> {
   try {
-    const res = await fetch('/api/stripe/status');
+    const res = await fetch('/api/stripe/status', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
     if (!res.ok) return { isPremium: false, plan: 'free' };
     return res.json();
   } catch {

@@ -17,6 +17,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   try {
+    // Verify ownership
+    const { data: feedbackRecord } = await supabaseAdmin
+      .from('voiceboard_feedback')
+      .select('project_id')
+      .eq('id', id)
+      .single();
+
+    if (!feedbackRecord) {
+      return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
+    }
+
+    const { data: project } = await supabaseAdmin
+      .from('voiceboard_projects')
+      .select('id')
+      .eq('id', feedbackRecord.project_id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!project) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await req.json();
     const updates: Record<string, unknown> = {};
 
@@ -53,6 +75,28 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  // Verify ownership
+  const { data: feedbackRecord } = await supabaseAdmin
+    .from('voiceboard_feedback')
+    .select('project_id')
+    .eq('id', id)
+    .single();
+
+  if (!feedbackRecord) {
+    return NextResponse.json({ error: 'Feedback not found' }, { status: 404 });
+  }
+
+  const { data: project } = await supabaseAdmin
+    .from('voiceboard_projects')
+    .select('id')
+    .eq('id', feedbackRecord.project_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (!project) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   const { error } = await supabaseAdmin

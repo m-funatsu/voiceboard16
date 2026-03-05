@@ -1,19 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { createProject } from '@/lib/storage';
+import { usePremium } from '@/contexts/PremiumContext';
+import { createProject, getProjects } from '@/lib/storage';
+import { Paywall } from '@/components/shared/Paywall';
+import { PLAN_LIMITS } from '@/types';
 
 export default function NewProjectPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { isPremium, plan } = usePremium();
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [accentColor, setAccentColor] = useState('#6366f1');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [existingProjectCount, setExistingProjectCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      getProjects(user.id).then((projects) => {
+        setExistingProjectCount(projects.length);
+        const limit = PLAN_LIMITS[plan]?.maxProjects ?? 1;
+        if (limit > 0 && projects.length >= limit && !isPremium) {
+          setShowPaywall(true);
+        }
+      });
+    }
+  }, [user, plan, isPremium]);
 
   const handleNameChange = (value: string) => {
     setName(value);
@@ -48,8 +66,23 @@ export default function NewProjectPage() {
     }
   };
 
+  const handleUpgrade = () => {
+    router.push('/pricing');
+  };
+
   return (
     <div className="mx-auto max-w-lg">
+      <Paywall
+        isOpen={showPaywall}
+        onClose={() => {
+          setShowPaywall(false);
+          router.push('/dashboard');
+        }}
+        featureTitle="複数プロジェクト作成"
+        featureDescription="無料プランでは1つのプロジェクトのみ作成できます。Proプランにアップグレードして、無制限のプロジェクトを管理しましょう。"
+        priceLabel="$19/月"
+        onUpgrade={handleUpgrade}
+      />
       <h1 className="mb-6 text-2xl font-bold text-gray-900">新規プロジェクト</h1>
 
       <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border border-gray-200 bg-white p-6">
