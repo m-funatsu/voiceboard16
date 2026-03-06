@@ -94,10 +94,10 @@ export default function ProjectDetailPage() {
         <ExportButton
           data={feedback}
           columns={[
-            { key: 'createdAt', label: '日付', format: (v: unknown) => new Date(v).toLocaleDateString('ja-JP') },
+            { key: 'createdAt', label: '日付', format: (v: unknown) => new Date(String(v)).toLocaleDateString('ja-JP') },
             { key: 'title', label: 'タイトル' },
-            { key: 'category', label: 'カテゴリ', format: (v: unknown) => CATEGORY_CONFIG[v as keyof typeof CATEGORY_CONFIG]?.labelJa ?? v },
-            { key: 'status', label: 'ステータス', format: (v: unknown) => STATUS_CONFIG[v as keyof typeof STATUS_CONFIG]?.labelJa ?? v },
+            { key: 'category', label: 'カテゴリ', format: (v: unknown) => CATEGORY_CONFIG[v as keyof typeof CATEGORY_CONFIG]?.labelJa ?? String(v) },
+            { key: 'status', label: 'ステータス', format: (v: unknown) => STATUS_CONFIG[v as keyof typeof STATUS_CONFIG]?.labelJa ?? String(v) },
             { key: 'voteCount', label: '投票数' },
           ]}
           filename={`feedback_${project.slug}`}
