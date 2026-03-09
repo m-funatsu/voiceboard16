@@ -37,7 +37,10 @@ export default function PricingPage() {
     if (!user) return;
     setLoading(planId);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Auth session timeout')), 5000)
+      );
+      const { data: { session } } = await Promise.race([supabase.auth.getSession(), timeout]);
       const { url } = await createCheckoutSession(session?.access_token || '', planId);
       if (url) window.location.href = url;
     } catch (err) {
